@@ -3,7 +3,9 @@ import React from "react";
 export default class Home extends React.Component {
 	render() {
 		return (
-			<div>wat</div>
+			<div>
+				Home
+			</div>
 		)
 	}
 }
