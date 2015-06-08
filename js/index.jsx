@@ -6,9 +6,9 @@ let Link = Router.Link;
 let Route = Router.Route;
 let RouteHandler = Router.RouteHandler;
 
-import Home from "./Home.jsx";
-import Projects from "./Projects.jsx";
-import About from "./About.jsx";
+import Home from "react-router-proxy!./Home.jsx";
+import Projects from "react-router-proxy!./Projects.jsx";
+import About from "react-router-proxy!./About.jsx";
 
 class Index extends React.Component {
 	render() {
@@ -37,7 +37,7 @@ let routes = (
 	</Route>
 )
 
-var app = undefined;
+let app = undefined;
 
 if (typeof document != "undefined") {
 	app = Router.run(routes, function(Handler) {

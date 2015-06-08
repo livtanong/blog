@@ -36,8 +36,9 @@ var baseConfig = function(options) {
     filename: '[name].js',
   }
 
-  if (options.prerender) {
+  if (options.prod) {
     // generate docs.js, for use in populating the prerendered document
+    console.log("yo");
     plugins.push(
       cssPlugin,
       new webpack.optimize.UglifyJsPlugin(),
@@ -47,6 +48,7 @@ var baseConfig = function(options) {
         }
       })
     );
+  } else if (options.prerender) {
     entry = {"prerenderHtml": "./prerenderHtml"};
     output.libraryTarget = "commonjs2";
   }

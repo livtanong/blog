@@ -1,4 +1,4 @@
-all: development
+all: dev
 
 clean:
 	@test -d build && rm -r build || true
@@ -6,10 +6,11 @@ clean:
 deps:
 	@npm install
 
-development: deps
+dev: deps
 	./node_modules/.bin/webpack-dev-server --host 0.0.0.0 --config webpack-dev.config.js --inline --hot --content-base .
 
-production: clean deps
+prod: deps
+	./node_modules/.bin/webpack --config webpack-prod.config.js
 	# babel src --out-dir lib
 	# node prerender.js
 

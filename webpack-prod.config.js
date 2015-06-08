@@ -1,5 +1,5 @@
 var config = require('./webpack-base.config.js')({
-	prod: false,
+  prod: true,
   prerender: false
 });
 
