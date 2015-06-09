@@ -1,27 +1,16 @@
 import React from "react";
-import Router from "react-router";
+import Router, {DefaultRoute, Link, Route, RouteHandler} from "react-router";
 
-let DefaultRoute = Router.DefaultRoute;
-let Link = Router.Link;
-let Route = Router.Route;
-let RouteHandler = Router.RouteHandler;
-
-import Home from "react-router-proxy!./Home.jsx";
-import Projects from "react-router-proxy!./Projects.jsx";
-import About from "react-router-proxy!./About.jsx";
+import Home from "./Pages/Home.jsx"; //react-router-proxy!
+import Projects from "./Pages/Projects.jsx"; //react-router-proxy!
+import About from "./Pages/About.jsx"; //react-router-proxy!
+import Toolbar from "./Toolbar";
 
 class Index extends React.Component {
 	render() {
 		return (
 			<div>
-				<header>
-					<ul>
-						<li><Link to="home">Home</Link></li>
-						<li><Link to="projects">Projects</Link></li>
-						<li><Link to="about">About</Link></li>
-					</ul>
-					
-				</header>
+				<Toolbar />
 				<RouteHandler />
 			</div>
 		)
@@ -30,19 +19,19 @@ class Index extends React.Component {
 
 let routes = (
 	<Route name="index" path="/" handler={ Index }>
-		<Route name="home" path="/home" handler={ Home } />
 		<Route name="projects" path="/projects" handler={ Projects } />
 		<Route name="about" path="/about" handler={ About } />
 		<DefaultRoute handler={ Home }/>
 	</Route>
 )
 
-let app = undefined;
+let Root = Router.create({routes :routes});
 
 if (typeof document != "undefined") {
-	app = Router.run(routes, function(Handler) {
+	Root.run(function(Handler) {
 		React.render(<Handler />, document.body);
 	})
 }
+// console.log(React.renderToStaticMarkup(<Root/>));
 
-export default app;
+export default Root;

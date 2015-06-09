@@ -4,6 +4,12 @@ var ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 var baseConfig = function(options) {
   var plugins = [];
+  var pageLoaders = [
+    { 
+      test: /Pages/,
+      loader: "react-router-proxy!babel-loader"
+    }
+  ];
   var styleLoaders = [
     { test: /\.css$/, loader: "css" },
     { test: /\.s(a|c)ss$/, loader: "css!sass?includePaths[]="+bourbon }
@@ -29,6 +35,7 @@ var baseConfig = function(options) {
 
   var cssPlugin = new ExtractTextPlugin("bundle.css");
   var entry = {"home": "./js/index.jsx"};
+  // var entry = {"home": "./js/PrerenderIndex.jsx"};
   var externals = {};
   var output = {
     path: 'build',
@@ -38,7 +45,6 @@ var baseConfig = function(options) {
 
   if (options.prod) {
     // generate docs.js, for use in populating the prerendered document
-    console.log("yo");
     plugins.push(
       cssPlugin,
       new webpack.optimize.UglifyJsPlugin(),
@@ -50,7 +56,9 @@ var baseConfig = function(options) {
     );
   } else if (options.prerender) {
     entry = {"prerenderHtml": "./prerenderHtml"};
+    // externals = {"react-router": "fs"};
     output.libraryTarget = "commonjs2";
+    pageLoaders = [];
   }
 
   return {
@@ -77,7 +85,7 @@ var baseConfig = function(options) {
         { test: /\.png($|\?)/,    loader: "url?limit=10000&mimetype=image/png" },
         { test: /\.jpg($|\?)/,    loader: "url?limit=10000&mimetype=image/jpeg" },
         { test: /\.ico($|\?)/,    loader: "url?limit=10000&mimetype=image/x-icon" }
-      ])
+      ]).concat(pageLoaders)
     }
   }
 

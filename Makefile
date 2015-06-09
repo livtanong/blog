@@ -14,10 +14,13 @@ prod: deps
 	# babel src --out-dir lib
 	# node prerender.js
 
+prerender: deps
+	./node_modules/.bin/webpack --config webpack-prerender.config.js
+	node prerender.js
+
 # docs: clean deps
 # 	./node_modules/.bin/webpack --config webpack-docs.config.js
 # 	./node_modules/.bin/webpack --config webpack-prerender.config.js
-# 	node prerender.js
 
 deploy:
 	git checkout gh-pages
