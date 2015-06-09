@@ -49,9 +49,9 @@ module.exports =
 
 	var React = __webpack_require__(1);
 	var Index = __webpack_require__(157);
+
 	var indexHtml = __webpack_require__(201);
 	var indexComponent = React.renderToStaticMarkup(React.createElement(Index));
-	console.log(indexComponent);
 	module.exports = indexHtml.replace('Loading', indexComponent);
 
 /***/ },
@@ -20459,19 +20459,13 @@ module.exports =
 
 	var _PagesHomeJsx2 = _interopRequireDefault(_PagesHomeJsx);
 
-	//react-router-proxy!
-
 	var _PagesProjectsJsx = __webpack_require__(158);
 
 	var _PagesProjectsJsx2 = _interopRequireDefault(_PagesProjectsJsx);
 
-	//react-router-proxy!
-
 	var _PagesAboutJsx = __webpack_require__(199);
 
 	var _PagesAboutJsx2 = _interopRequireDefault(_PagesAboutJsx);
-
-	//react-router-proxy!
 
 	var _Toolbar = __webpack_require__(200);
 
@@ -20513,12 +20507,11 @@ module.exports =
 
 	var Root = _reactRouter2["default"].create({ routes: routes });
 
-	if (typeof document != "undefined") {
-		Root.run(function (Handler) {
+	Root.run(function (Handler) {
+		if (typeof document != "undefined") {
 			_react2["default"].render(_react2["default"].createElement(Handler, null), document.body);
-		});
-	}
-	// console.log(React.renderToStaticMarkup(<Root/>));
+		}
+	});
 
 	exports["default"] = Root;
 	module.exports = exports["default"];

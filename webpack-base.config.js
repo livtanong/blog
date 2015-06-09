@@ -34,7 +34,7 @@ var baseConfig = function(options) {
   // }));
 
   var cssPlugin = new ExtractTextPlugin("bundle.css");
-  var entry = {"home": "./js/index.jsx"};
+  var entry = {"home": "./src/js/index.jsx"};
   // var entry = {"home": "./js/PrerenderIndex.jsx"};
   var externals = {};
   var output = {

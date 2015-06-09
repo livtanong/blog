@@ -7,7 +7,7 @@ deps:
 	@npm install
 
 dev: deps
-	./node_modules/.bin/webpack-dev-server --host 0.0.0.0 --config webpack-dev.config.js --inline --hot --content-base .
+	./node_modules/.bin/webpack-dev-server --host 0.0.0.0 --config webpack-dev.config.js --inline --hot --content-base ./src
 
 prod: deps
 	./node_modules/.bin/webpack --config webpack-prod.config.js

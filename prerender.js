@@ -10,5 +10,5 @@ var fs = require('fs');
 //             .replace('embed.js', 'embed.'+hash+'.js')
 //     );
 // }
-fs.writeFileSync('./build/index.html', prerendered);
+fs.writeFileSync('./index.html', prerendered);
 // fs.writeFileSync('./build/embed.html', replace(prerendered.embed));

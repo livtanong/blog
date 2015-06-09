@@ -1,9 +1,9 @@
 import React from "react";
 import Router, {DefaultRoute, Link, Route, RouteHandler} from "react-router";
 
-import Home from "./Pages/Home.jsx"; //react-router-proxy!
-import Projects from "./Pages/Projects.jsx"; //react-router-proxy!
-import About from "./Pages/About.jsx"; //react-router-proxy!
+import Home from "./Pages/Home.jsx";
+import Projects from "./Pages/Projects.jsx";
+import About from "./Pages/About.jsx";
 import Toolbar from "./Toolbar";
 
 class Index extends React.Component {
@@ -27,11 +27,10 @@ let routes = (
 
 let Root = Router.create({routes :routes});
 
-if (typeof document != "undefined") {
-	Root.run(function(Handler) {
+Root.run(function(Handler) {
+	if (typeof document != "undefined") {
 		React.render(<Handler />, document.body);
-	})
-}
-// console.log(React.renderToStaticMarkup(<Root/>));
+	}
+})
 
 export default Root;
