@@ -1,5 +1,6 @@
 (ns site.ssr
-  (:require [hiccup2.core :as hiccup]))
+  (:require [hiccup2.core :as hiccup]
+            [clojure.java.io :as io]))
 
 (def page
   (hiccup/html
@@ -18,4 +19,4 @@
 
 (defn -main
   [& args]
-  (spit "/index.html" page))
+  (spit (io/resource "public/index.html") page))
