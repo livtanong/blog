@@ -1,7 +1,7 @@
 build:
 	clojure -Assr
 
-deploy:
+deploy: build
 	git checkout master
 	sudo cp /resources/public/* /
 	git commit -m "build"
