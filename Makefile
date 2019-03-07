@@ -3,6 +3,7 @@ build:
 
 deploy:
 	git checkout master
-	cp /resources/public/* /
+	sudo cp /resources/public/* /
 	git commit -m "build"
+	git push
 	git checkout develop
