@@ -2,4 +2,4 @@
         hiccup             {:mvn/version "2.0.0-alpha2"}}
  :paths ["src" "resources"]
  :aliases
- {:ssr {:main-opts "-m site.ssr"}}}
+ {:ssr {:main-opts ["-m" "site.ssr"]}}}

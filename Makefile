@@ -1,5 +1,5 @@
 build:
-	clojure -m site.ssr
+	clojure -Assr
 
 deploy:
 	git checkout master
