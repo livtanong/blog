@@ -7,8 +7,8 @@ jobs:
   build:
     docker:
       # specify the version you desire here
-      # - image: clojure:tools-deps
-      - image: circleci/clojure:openjdk11-tools-deps
+      - image: clojure:tools-deps
+      # - image: circleci/clojure:openjdk11-tools-deps
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
