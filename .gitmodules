@@ -2,3 +2,7 @@
 	path = themes/hugo-cactus-theme
 	url = https://github.com/digitalcraftsman/hugo-cactus-theme.git
 	ignore = dirty
+[submodule "public"]
+	path = public
+	url = git@github.com:levitanong/levitanong.github.io.git
+	branch = master
