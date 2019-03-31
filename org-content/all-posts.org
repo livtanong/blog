@@ -18,12 +18,13 @@
 Many companies and organizations subsidize certain things like gas, transit,
 food, and lodging for their employees. While one might consider personal and
 company expenses two separate things, it is useful sometimes to keep duplicate
-records because we don't want to assume those benefits are there forever. One
-then can be faced with the rather unenviable task of entering transactional data
-in both personal bookkeeping and whatever online system your company prescribes.
-In my case, I use ledger-mode for personal accounting and airtable for my
-company. This article details my efforts at minimizing duplicated effort given
-interoperation between these two systems.
+records because we don't want to assume those benefits are there forever. We are
+left with the rather unenviable task of entering transactional data in both
+personal bookkeeping and whatever online system your company prescribes. In my
+case, I use ledger-mode for personal accounting and airtable for my company.
+This article details my efforts at minimizing duplicated effort using emacs's
+scripting features to parse Ledger data and POST the appropriate information to
+airtable.
 
 ** Ledger Data
 
