@@ -9,6 +9,12 @@ googleAnalytics = ""
 staticDir = "static"
 # Disable comments by leaving disqusShortname empty
 # disqusShortname = "spf13"
+#
+# pygmentsUseClassic = true
+pygmentsCodefences = true
+
+[pygmentsOptions]
+	noclasses = true
 
 [params]
 	name = "Levi Tan Ong"
@@ -20,7 +26,7 @@ staticDir = "static"
 
 	# Integrate Javascript files or stylesheets by adding the url to the external assets or by
 	# linking local files with their path relative to the static folder, e.g. "css/styles.css"
-	customCSS = []
+	customCSS = ["css/custom.css", "css/syntax.css"]
 	customJS  = []
 
 	# The variables below are optionally too and can be used to
@@ -35,7 +41,7 @@ staticDir = "static"
 	readMore = ""
 	copyright = ""
 	# Sharing options and author information in posts
-	aboutAuthor = "I'm an blogger."
+	aboutAuthor = "I'm a full stack developer. In danger of turning Emacs into my OS."
 	tweet = ""
 	share = ""
 	# 404 page
@@ -44,12 +50,12 @@ staticDir = "static"
 
 	# Choose a font for the social icons in the footer. Either "mono-social" or "font-awesome"
 	iconFont = "mono-social"
-    # The social icons can be styled differently if you use mono as font - circle, rounded, or empty
-    socialIconStyle = "circle"
+	# The social icons can be styled differently if you use mono as font - circle, rounded, or empty
+	socialIconStyle = "circle"
 
 # Add additional social link entries underneath
 [social]
-    twitter  = "https://www.twitter.com/levitanong"
-    # facebook = "https://www.facebook.com/"
-    github   = "https://www.github.com/levitanong"
-    # dribble  = "https://www.dribbble.com/"
+	twitter  = "https://www.twitter.com/levitanong"
+	# facebook = "https://www.facebook.com/"
+	github   = "https://www.github.com/levitanong"
+	# dribble  = "https://www.dribbble.com/"
