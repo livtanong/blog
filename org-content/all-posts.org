@@ -2,13 +2,12 @@
 #+hugo_auto_set_lastmod: t
 
 #+seq_todo: TODO DRAFT DONE
-#+seq_todo: TEST__TODO | TEST__DONE
 
 #+property: header-args :eval never-export
 
 #+author: Levi Tan Ong
 
-* TODO Expense Logging with Ledger Mode and Airtable
+* DRAFT Expense Logging with Ledger Mode and Airtable
 :PROPERTIES:
 :EXPORT_FILE_NAME: expense-logging-with-ledger-mode-and-airtable
 :EXPORT_DATE: 2019-3-31
@@ -25,6 +24,7 @@ case, I use ledger-mode for personal accounting and airtable for my company.
 This article details my efforts at minimizing duplicated effort using emacs's
 scripting features to parse Ledger data and POST the appropriate information to
 airtable.
+TESTING
 
 ** Ledger Data
 
@@ -149,3 +149,24 @@ time than Airtable's lack of power.
 [fn:miseenplace] The french cooking term for placing everything you need set
 up in front of you, so you don't have to burn that omelette while looking for
 that parsley.
+
+* TODO Github READMEs in Org Mode
+:PROPERTIES:
+:EXPORT_FILE_NAME: github-readmes-in-org-mode
+:EXPORT_DATE: 2019-3-31
+:END:
+** clojars image links
+https://github.com/wallyqs/org-ruby/issues/42
+** code block evaluation
+*** results being funky
+https://orgmode.org/manual/results.html
+*** multiline headers for readability
+https://orgmode.org/manual/Using-Header-Arguments.html
+*** results not showing on github
+https://github.com/wallyqs/org-ruby/issues/62
+
+* Footnotes
+* COMMENT Local Variables                          :ARCHIVE:
+# Local Variables:
+# eval: (org-hugo-auto-export-mode)
+# End:
