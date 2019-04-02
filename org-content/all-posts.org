@@ -164,6 +164,13 @@ https://orgmode.org/manual/results.html
 https://orgmode.org/manual/Using-Header-Arguments.html
 *** results not showing on github
 https://github.com/wallyqs/org-ruby/issues/62
+* TODO Fish et al
+:PROPERTIES:
+:EXPORT_FILE_NAME: fish-et-al
+:EXPORT_DATE: 2019-3-31
+:END:
+** clojars and credentials
+** git crypt
 
 * Footnotes
 * COMMENT Local Variables                          :ARCHIVE:
