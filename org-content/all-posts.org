@@ -16,34 +16,47 @@
 
 Many companies and organizations subsidize certain things like transit, food,
 and lodging for their employees, with the requirement that the latter log these
-expenses in some financial accounting software. (In my case, it is
-[[https://airtable.com][Airtable]].) Despite the obvious tedium, it is useful to
-record this data on one's personal [[https://www.ledger-cli.org/][Ledger]]
-journal for more complete data. [fn:completeData] Luckily, emacs is highly
-scriptable, and provides us with a lot of tools to make our lives easier. This
-article details my efforts in building a system for posting expenses from a
-Ledger file onto Airtable .
+expenses in some financial accounting software. (In my case, it is [[https://airtable.com][Airtable]].)
+Despite the obvious tedium, it is useful to record this data on one's personal
+[[https://www.ledger-cli.org/][Ledger]] journal for more complete data. [fn:completeData] Luckily, emacs is
+highly scriptable, and provides us with a lot of tools to make our lives easier.
+This article details my efforts and thought process in building a system for
+posting expenses from a Ledger file onto Airtable. Because it follows my thought
+and learning process, it may feel a bit hand-holdy and may appear to
+over-explain. I want this article to be as accessible as possible, so please
+bear with me.
 
 ** Ledger Data
 
 Consider a typical ledger transaction:
 
 #+NAME: Gas Receipt
-#+BEGIN_SRC ledger :results silent :exports none :cmdline -s bal
+#+BEGIN_SRC ledger :results silent
 2019/03/29 Richard Stallman's Gas Station
     expenses:transport:fuel                     2000 PHP
     expenses:food                                200 PHP
     assets:cash                                -2200 PHP
 #+END_SRC
 
-Let's rummage through the ledger
-[[https://github.com/ledger/ledger-mode][source]] to see if we can find a good
-starting point. It turns out that
-[[https://github.com/ledger/ledger-mode/blob/c59bbfcc3274d113dec68121786546979f33dad0/ledger-xact.el#L65][ledger-xact-payee]]
-exists. Since ~ledger-xact-payee~ uses ~point~, and I want to evaluate things
-using ~org-babel-execute-src-block~, we'll have to take an excusion to position
-~1287~ (yes, I found the point of some character inside that posting above)
-before invoking ~ledger-xact-payee~.
+*** Definition of Terms
+
+Ledger's terminology may be a little confusing, so let's clarify them.
+
+| Term        | What it means                                                                                                                                                                           | Example                        |
+|-------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------|
+| transaction | A line item detailing a change in the amount stored in an account                                                                                                                       | expenses:food   2200 PHP       |
+| xact        | A group of transactions tied by a date and some description, usually just the payee. What a lot of peple, myself included, would intuitively think of as the "transaction"              | The whole thing above          |
+| payee       | A contextualizing description of the xact. Usually a person or entity like John, or McDonald's                                                                                          | Richard Stallman's Gas Station |
+| account     | An account as described in double entry bookkeeping                                                                                                                                     | expenses:food                  |
+| amount      | The amount by which an account's balance changes. Because we're sensible programmers, we just use positive and negative values rather than superfluous terms like "debit" and "credit". | -2200 PHP                      |
+
+*** Exploration
+
+Let's rummage through the ledger [[https://github.com/ledger/ledger-mode][source]] to see if we can find a good starting
+point. It turns out that [[https://github.com/ledger/ledger-mode/blob/c59bbfcc3274d113dec68121786546979f33dad0/ledger-xact.el#L65][ledger-xact-payee]] exists. Since ~ledger-xact-payee~
+uses ~point~, and I want to evaluate things using ~org-babel-execute-src-block~,
+we'll have to take an excusion to position ~1287~ (yes, I found the point of
+some character inside that posting above) before invoking ~ledger-xact-payee~.
 
 #+begin_src emacs-lisp :exports both
 (save-excursion
@@ -60,14 +73,24 @@ amount, so let's see how ~ledger-xact-payee~ found the payee.
 #+begin_src emacs-lisp
 (defun ledger-xact-payee ()
   "Return the payee of the transaction containing point or nil."
-  (let ((i 0))
+  (let ((i 0)) ;; (1)
     (while (eq (ledger-context-line-type (ledger-context-other-line i)) 'acct-transaction)
-      (setq i (- i 1)))
+      (setq i (- i 1))) ;; (2)
     (let ((context-info (ledger-context-other-line i)))
-      (if (eq (ledger-context-line-type context-info) 'xact)
-          (ledger-context-field-value context-info 'payee)
+      (if (eq (ledger-context-line-type context-info) 'xact) ;; (3)
+          (ledger-context-field-value context-info 'payee) ;; (4)
         nil))))
 #+end_src
+
+So it looks like:
+1. We start from point
+2. Move up a line if we're in an account transaction
+3. If the line is the ~xact~
+4. Return the ~payee~
+
+Looks like we aren't doing anything fancy. We can extend this algorithm to get
+the date from the same ~xact~ line. As for the amount, since only one of the
+amounts should matter in the entire posting,
 
 ** Footnotes
 [fn:completeData] For instance, you might not work in the same company forever,
