@@ -94,19 +94,21 @@ so we'll have to build our own. Since the implementation would be too similar to
 into something more general and composable.
 
 #+begin_src emacs-lisp
-(defun ledger-xact-offset ()
-  "Return the offset that contains the start of a transaction."
+(defun ledger-xact-context ()
+  "Return the context of the transaction containing point or nil."
   (let ((i 0))
     (while (eq (ledger-context-line-type (ledger-context-other-line i)) 'acct-transaction)
       (setq i (- i 1)))
-    i))
+    (let ((context-info (ledger-context-other-line i)))
+      (if (eq (ledger-context-line-type context-info) 'xact)
+          context-info
+        nil))))
 
-(defun ledger-xact-context ()
-  "Return the context of an xact containing the point or nil."
-  (let* ((xact-offset (ledger-xact-offset))
-         (context-info (ledger-context-other-line xact-offset)))
-    (if (eq (ledger-context-line-type context-info) 'xact)
-        context-info
+(defun ledger-xact-payee ()
+  "Return the payee of the transaction containing point or nil."
+  (let ((xact-context (ledger-xact-context)))
+    (if xact-context
+        (ledger-context-field-value xact-context 'payee)
       nil)))
 #+end_src
 
@@ -129,7 +131,15 @@ assume the simplest case. The solution is simple: we can let the user specify it
 for us. We can just use ~(ledger-context-other-line 0)~ which, if you look at
 the source, is really just ~(ledger-context-at-point)~.
 
+#+begin_src emacs-lisp :exports both :results pp
+(save-excursion
+  (goto-char 1489)
+  (let ((point-context (ledger-context-at-point)))
+    (ledger-context-field-value point-context 'commoditized-amount)))
+#+end_src
 
+#+RESULTS:
+: "-2200 PHP"
 
 ** Footnotes
 [fn:completeData] For instance, you might not work in the same company forever,
