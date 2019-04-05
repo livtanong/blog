@@ -22,8 +22,8 @@ Despite the obvious tedium, it is useful to record this data on one's personal
 highly scriptable, and provides us with a lot of tools to make our lives easier.
 This article details my efforts and thought process in building a system for
 posting expenses from a Ledger file onto Airtable. Because it follows my thought
-and learning process, it may feel a bit hand-holdy and may appear to
-over-explain. I want this article to be as accessible as possible, so please
+and learning process, it may feel a bit hand-holdy and tend towards
+over-explaining. I want this article to be as accessible as possible, so please
 bear with me.
 
 ** Ledger Data
@@ -42,13 +42,13 @@ Consider a typical ledger transaction:
 
 Ledger's terminology may be a little confusing, so let's clarify them.
 
-| Term        | What it means                                                                                                                                                                           | Example                        |
-|-------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------|
-| transaction | A line item detailing a change in the amount stored in an account                                                                                                                       | expenses:food   2200 PHP       |
-| xact        | A group of transactions tied by a date and some description, usually just the payee. What a lot of peple, myself included, would intuitively think of as the "transaction"              | The whole thing above          |
-| payee       | A contextualizing description of the xact. Usually a person or entity like John, or McDonald's                                                                                          | Richard Stallman's Gas Station |
-| account     | An account as described in double entry bookkeeping                                                                                                                                     | expenses:food                  |
-| amount      | The amount by which an account's balance changes. Because we're sensible programmers, we just use positive and negative values rather than superfluous terms like "debit" and "credit". | -2200 PHP                      |
+| Term        | What it means                                                                                                                                                                                               | Example                        |
+|-------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------|
+| transaction | A line item detailing a change in the amount stored in an account                                                                                                                                           | expenses:food   2200 PHP       |
+| xact        | A group of transactions tied by a date and some description, usually just the payee. What a lot of peple, myself included, would intuitively think of as the "transaction". I sometimes call this an entry. | The whole thing above          |
+| payee       | A contextualizing description of the xact. Usually a person or entity like John, or McDonald's                                                                                                              | Richard Stallman's Gas Station |
+| account     | An account as described in double entry bookkeeping                                                                                                                                                         | expenses:food                  |
+| amount      | The amount by which an account's balance changes. Because we're sensible programmers, we just use positive and negative values rather than superfluous terms like "debit" and "credit".                     | -2200 PHP                      |
 
 *** Exploration
 
@@ -88,9 +88,48 @@ So it looks like:
 3. If the line is the ~xact~
 4. Return the ~payee~
 
-Looks like we aren't doing anything fancy. We can extend this algorithm to get
-the date from the same ~xact~ line. As for the amount, since only one of the
-amounts should matter in the entire posting,
+Simple enough. Unfortunately, I haven't found anything like ~ledger-xact-date~,
+so we'll have to build our own. Since the implementation would be too similar to
+~ledger-xact-payee~, I think it would be worth refactoring ~ledger-xact-payee~
+into something more general and composable.
+
+#+begin_src emacs-lisp
+(defun ledger-xact-offset ()
+  "Return the offset that contains the start of a transaction."
+  (let ((i 0))
+    (while (eq (ledger-context-line-type (ledger-context-other-line i)) 'acct-transaction)
+      (setq i (- i 1)))
+    i))
+
+(defun ledger-xact-context ()
+  "Return the context of an xact containing the point or nil."
+  (let* ((xact-offset (ledger-xact-offset))
+         (context-info (ledger-context-other-line xact-offset)))
+    (if (eq (ledger-context-line-type context-info) 'xact)
+        context-info
+      nil)))
+#+end_src
+
+This way, we can just use ~ledger-context-field-value~ to get the date or payee.
+
+#+begin_src emacs-lisp :exports both :results pp
+(save-excursion
+  (goto-char 1287)
+  (let ((xact-context (ledger-xact-context)))
+    (list (ledger-context-field-value xact-context 'date)
+          (ledger-context-field-value xact-context 'payee))))
+#+end_src
+
+#+RESULTS:
+: ("2019/03/29" "Richard Stallman's Gas Station")
+
+As for the amount, there are at least two,
+and because ledger entries can get more complicated than this, we can't just
+assume the simplest case. The solution is simple: we can let the user specify it
+for us. We can just use ~(ledger-context-other-line 0)~ which, if you look at
+the source, is really just ~(ledger-context-at-point)~.
+
+
 
 ** Footnotes
 [fn:completeData] For instance, you might not work in the same company forever,
