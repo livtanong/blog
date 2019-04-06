@@ -27,7 +27,7 @@ over-explaining. I want this article to be as accessible as possible, so please
 bear with me.
 
 ** Ledger Data
-
+*** A typical receipt
 Consider a typical ledger transaction:
 
 #+NAME: Gas Receipt
@@ -50,7 +50,7 @@ Ledger's terminology may be a little confusing, so let's clarify them.
 | account     | An account as described in double entry bookkeeping                                                                                                                                                         | expenses:food                  |
 | amount      | The amount by which an account's balance changes. Because we're sensible programmers, we just use positive and negative values rather than superfluous terms like "debit" and "credit".                     | -2200 PHP                      |
 
-*** Exploration
+*** The Payee
 
 Let's rummage through the ledger [[https://github.com/ledger/ledger-mode][source]] to see if we can find a good starting
 point. It turns out that [[https://github.com/ledger/ledger-mode/blob/c59bbfcc3274d113dec68121786546979f33dad0/ledger-xact.el#L65][ledger-xact-payee]] exists. Since ~ledger-xact-payee~
@@ -74,7 +74,9 @@ amount, so let's see how ~ledger-xact-payee~ found the payee.
 (defun ledger-xact-payee ()
   "Return the payee of the transaction containing point or nil."
   (let ((i 0)) ;; (1)
-    (while (eq (ledger-context-line-type (ledger-context-other-line i)) 'acct-transaction)
+    (while (eq (ledger-context-line-type
+                (ledger-context-other-line i))
+               'acct-transaction)
       (setq i (- i 1))) ;; (2)
     (let ((context-info (ledger-context-other-line i)))
       (if (eq (ledger-context-line-type context-info) 'xact) ;; (3)
@@ -88,16 +90,20 @@ So it looks like:
 3. If the line is the ~xact~
 4. Return the ~payee~
 
+*** The Date
+
 Simple enough. Unfortunately, I haven't found anything like ~ledger-xact-date~,
 so we'll have to build our own. Since the implementation would be too similar to
 ~ledger-xact-payee~, I think it would be worth refactoring ~ledger-xact-payee~
 into something more general and composable.
 
-#+begin_src emacs-lisp
-(defun ledger-xact-context ()
+#+begin_src emacs-lisp :results silent
+(defun ledger-xact-context
   "Return the context of the transaction containing point or nil."
   (let ((i 0))
-    (while (eq (ledger-context-line-type (ledger-context-other-line i)) 'acct-transaction)
+    (while (eq (ledger-context-line-type
+                (ledger-context-other-line i))
+               'acct-transaction)
       (setq i (- i 1)))
     (let ((context-info (ledger-context-other-line i)))
       (if (eq (ledger-context-line-type context-info) 'xact)
@@ -124,6 +130,8 @@ This way, we can just use ~ledger-context-field-value~ to get the date or payee.
 
 #+RESULTS:
 : ("2019/03/29" "Richard Stallman's Gas Station")
+
+*** The Amount
 
 As for the amount, there are at least two, and because ledger entries can get
 more complicated than this, we can't just assume the simplest case. Instead, we
@@ -154,12 +162,52 @@ Let's look at another transaction.
 #+RESULTS:
 : 200 PHP
 
+*** Convenience
+
 We now have everything we need to create a function that can return all the data
 we need in a convenient form.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :exports both :results pp
+(defun airtable--expense-data ()
+  "Return transaction data for submitting an expense report."
+  (let ((xact-context (ledger-xact-context))
+        (point-context (ledger-context-at-point)))
+    (if (and xact-context
+             (eq (ledger-context-line-type point-context) 'acct-transaction)
+             (ledger-context-field-present-p point-context 'commoditized-amount))
+        (let ((tx-data (list))
+              (date (ledger-context-field-value xact-context 'date))
+              (payee (ledger-context-field-value xact-context 'payee))
+              (amount (ledger-context-field-value point-context 'commoditized-amount)))
+          (map-put tx-data 'date date)
+          (map-put tx-data 'payee payee)
+          (map-put tx-data 'amount amount)
+          tx-data)
+      nil)))
 
+(save-excursion
+  (goto-char 1489)
+  (airtable--expense-data)
+  )
 #+end_src
+
+#+RESULTS:
+: ((amount . -2200 PHP) (payee . Richard Stallman's Gas Station) (date . 2019/03/29))
+
+Now we have a nice, convenient associative data structure containing everything
+we need for the next part.
+
+** The Airtable API
+
+*** Setup
+
+Each company HR/finance department has its own system, and therefore we cannot
+predict the Airtable API to be used. We can, however, build a sample company
+expense tracking table, then work against that. What you learn here will be
+readily applied to any other scheme, even one that isn't Airtable. All we need
+is an API.
+
+
 
 ** Footnotes
 [fn:completeData] For instance, you might not work in the same company forever,
