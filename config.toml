@@ -12,6 +12,7 @@ staticDir = "static"
 #
 # pygmentsUseClassic = true
 pygmentsCodefences = true
+pygmentsStyle = "paraiso-dark"
 
 [pygmentsOptions]
 	noclasses = true
