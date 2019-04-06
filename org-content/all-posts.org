@@ -125,21 +125,41 @@ This way, we can just use ~ledger-context-field-value~ to get the date or payee.
 #+RESULTS:
 : ("2019/03/29" "Richard Stallman's Gas Station")
 
-As for the amount, there are at least two,
-and because ledger entries can get more complicated than this, we can't just
-assume the simplest case. The solution is simple: we can let the user specify it
-for us. We can just use ~(ledger-context-other-line 0)~ which, if you look at
-the source, is really just ~(ledger-context-at-point)~.
+As for the amount, there are at least two, and because ledger entries can get
+more complicated than this, we can't just assume the simplest case. Instead, we
+can just /not/ assume! We will let the user specify it for us. We can just use
+~(ledger-context-other-line 0)~ which, if you look at the source, is really just
+~(ledger-context-at-point)~.
 
 #+begin_src emacs-lisp :exports both :results pp
 (save-excursion
   (goto-char 1489)
   (let ((point-context (ledger-context-at-point)))
-    (ledger-context-field-value point-context 'commoditized-amount)))
+    (ledger-context-field-value point-context 'commoditized-amount))
+  )
 #+end_src
 
 #+RESULTS:
 : "-2200 PHP"
+
+Let's look at another transaction.
+
+#+begin_src emacs-lisp
+(save-excursion
+  (goto-char 1433)
+  (let ((point-context (ledger-context-at-point)))
+    (ledger-context-field-value point-context 'commoditized-amount)))
+#+end_src
+
+#+RESULTS:
+: 200 PHP
+
+We now have everything we need to create a function that can return all the data
+we need in a convenient form.
+
+#+begin_src emacs-lisp
+
+#+end_src
 
 ** Footnotes
 [fn:completeData] For instance, you might not work in the same company forever,
