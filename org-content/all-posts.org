@@ -7,7 +7,7 @@
 
 #+author: Levi Tan Ong
 
-* DRAFT Expense Logging with Ledger Mode and Airtable
+* DRAFT Airtable Expense Logging with Ledger Mode
 :PROPERTIES:
 :EXPORT_FILE_NAME: expense-logging-with-ledger-mode-and-airtable
 :EXPORT_DATE: 2019-3-31
@@ -16,17 +16,24 @@
 
 Many companies and organizations subsidize certain things like transit, food,
 and lodging for their employees, with the requirement that the latter log these
-expenses in some financial accounting software. (In my case, it is [[https://airtable.com][Airtable]].)
-Despite the obvious tedium, it is useful to record this data on one's personal
-[[https://www.ledger-cli.org/][Ledger]] journal for more complete data. [fn:completeData] Luckily, emacs is
-highly scriptable, and provides us with a lot of tools to make our lives easier.
-This article details my efforts and thought process in building a system for
-posting expenses from a Ledger file onto Airtable. Because it follows my thought
-and learning process, it may feel a bit hand-holdy and tend towards
-over-explaining. I want this article to be as accessible as possible, so please
-bear with me.
+expenses via some system defined by the Powers That Be. My company uses
+[[https://airtable.com][Airtable]]. [fn:airtable]
+
+If you use [[https://www.ledger-cli.org/][Ledger]] to maintain your personal accounting, it can and will be
+tedious to log your subsidized/reimbursable expenses on both Ledger /and/
+Airtable. Even if you can say that it isn't really your money being spent, if
+it's a personal expense being subsidized, it's still part of your lifestyle, and
+there is no guarantee you'll be working in the same place or have the same
+benefits forever. This data is valuable to you, and you should keep track of it.
+
+Luckily for us, Airtable has an API. This article details my efforts in building
+a set of emacs functions for posting expenses from a Ledger file onto Airtable.
+Because I want this article to be as accessible and as informative as possible,
+I will go through the derivation of this script including exploring
+ledger-mode's implementation.
 
 ** Ledger Data
+
 *** A typical receipt
 Consider a typical ledger transaction:
 
@@ -174,11 +181,15 @@ we need in a convenient form.
         (point-context (ledger-context-at-point)))
     (if (and xact-context
              (eq (ledger-context-line-type point-context) 'acct-transaction)
-             (ledger-context-field-present-p point-context 'commoditized-amount))
+             (ledger-context-field-present-p point-context
+                                             'commoditized-amount))
         (let ((tx-data (list))
-              (date (ledger-context-field-value xact-context 'date))
-              (payee (ledger-context-field-value xact-context 'payee))
-              (amount (ledger-context-field-value point-context 'commoditized-amount)))
+              (date (ledger-context-field-value xact-context
+                                                'date))
+              (payee (ledger-context-field-value xact-context
+                                                 'payee))
+              (amount (ledger-context-field-value point-context
+                                                  'commoditized-amount)))
           (map-put tx-data 'date date)
           (map-put tx-data 'payee payee)
           (map-put tx-data 'amount amount)
@@ -192,27 +203,80 @@ we need in a convenient form.
 #+end_src
 
 #+RESULTS:
-: ((amount . -2200 PHP) (payee . Richard Stallman's Gas Station) (date . 2019/03/29))
+: ((amount . -2200 PHP)
+:  (payee . Richard Stallman's Gas Station)
+:  (date . 2019/03/29))
 
 Now we have a nice, convenient associative data structure containing everything
 we need for the next part.
 
-** The Airtable API
+
+** Airtable
 
 *** Setup
 
-Each company HR/finance department has its own system, and therefore we cannot
-predict the Airtable API to be used. We can, however, build a sample company
-expense tracking table, then work against that. What you learn here will be
-readily applied to any other scheme, even one that isn't Airtable. All we need
-is an API.
+This section is tricky, because this involves secrets: the "project" id included
+in the URL, and the API key. The former is arguable in its status as a secret,
+but I'd rather not show everyone the URL to my project.
 
+# TODO: talk about encrypting the keys
+
+Funnily enough, I have never been able to get to the API page from my airtable
+account, and have always googled it to get to https://airtable.com/api. Because
+I forget URLs, even obvious ones.
+
+Each Airtable *base* has its own tables and schema, so it will be up you to
+figure out the right table to interact with, and exact fields to use in the JSON
+payload. For my company, the relevant fields are:
+
+1. Date Purchased
+2. Name
+3. Expense Type
+4. PHP Value
+5. Purchase
+
+Beyond the data itself, we need two more things to make this all work: the URL,
+and the access token. Both of these you can get from your base's API
+documentation. Mine are... Just kidding.
+
+*** Experimentation
+
+If I were you, I'd be wary about running POST requests right off the bat without
+being sure about our requests. We'll use ~request.el~ for our http needs.
+
+#+begin_src emacs-lisp :results silent
+(use-package request :ensure t)
+#+end_src
+
+#+begin_src emacs-lisp :async :exports both :results output
+;; Note that we're only getting 1 record because we just want to confirm that this whole thing works.
+(load-file "../secrets/airtable-secrets.el")
+(require 'airtable-secrets)
+(request airtable-secrets-url
+         :type "GET"
+         :sync t
+         :parser 'json-read
+         :headers `(("Content-Type" . "application/json")
+                    ("Authorization" . ,(format "Bearer %s" airtable-secrets-auth-token)))
+         :success (cl-function
+                   (lambda (&key data &allow-other-keys)
+                     (print data)))
+         :error (cl-function
+                 (lambda (&key error-thrown &allow-other-keys)
+                   (print error-thrown))))
+#+end_src
+
+#+RESULTS:
+:
+: ((records . [((id . "rec0BVl03DnQa6HXq") (fields (Who\ Paid\? . "Maritza") (Receipt\ Photo . [((id . "attRl2O8I67NQBQXo") (url . "https://dl.airtable.com/0cWfA9hiTOWP5QfdUNij_cactuscastle.jpg") (filename . "cactuscastle.jpg") (size . 16064) (type . "image/jpeg") (thumbnails (small (url . "https://dl.airtable.com/MBqpodIaQJWI62Q5t1iq_cactuscastle.jpg") (width . 48) (height . 36)) (large (url . "https://dl.airtable.com/WQVXLIuiQTGYIgDoAIxY_cactuscastle.jpg") (width . 256) (height . 191))))]) (Date\ &\ Time . "2015-11-06T14:22:00.000Z") (Notes . "A cute blue cactus with golden spines, will go great in the dining room.") (Category . "Interior Decor") (Short\ Description . "Cactus") (Total . 11.5)) (createdTime . "2015-08-03T23:10:03.000Z"))]))
 
 
 ** Footnotes
-[fn:completeData] For instance, you might not work in the same company forever,
-but still maintain your spending habits. Just because you aren't spending money
-doesn't mean you aren't /spending/.
+[fn:airtable] My company also uses Airtable for other administrative tasks like
+tracking leaves of absence and many other things. We've mostly switched over to
+[[https://www.notion.so][Notion]] because it performs better as a knowledge base, but unfortnately Notion
+doesn't have an API.
+
 
 
 * TODO Github READMEs in Org Mode
