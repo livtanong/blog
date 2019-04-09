@@ -67,7 +67,7 @@ some character inside that posting above) before invoking ~ledger-xact-payee~.
 
 #+begin_src emacs-lisp :exports both
 (save-excursion
-  (goto-char 1287)
+  (goto-char 1586)
   (ledger-xact-payee))
 #+end_src
 
@@ -77,7 +77,7 @@ some character inside that posting above) before invoking ~ledger-xact-payee~.
 Great, it works as advertized. We also want to figure out the date and the
 amount, so let's see how ~ledger-xact-payee~ found the payee.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :exports code :results silent
 (defun ledger-xact-payee ()
   "Return the payee of the transaction containing point or nil."
   (let ((i 0)) ;; (1)
@@ -127,16 +127,18 @@ into something more general and composable.
 
 This way, we can just use ~ledger-context-field-value~ to get the date or payee.
 
-#+begin_src emacs-lisp :exports both :results pp
+#+begin_src emacs-lisp :exports both :results code
 (save-excursion
-  (goto-char 1287)
+  (goto-char 1601)
   (let ((xact-context (ledger-xact-context)))
     (list (ledger-context-field-value xact-context 'date)
           (ledger-context-field-value xact-context 'payee))))
 #+end_src
 
 #+RESULTS:
-: ("2019/03/29" "Richard Stallman's Gas Station")
+#+begin_src emacs-lisp
+("2019/03/29" "Richard Stallman's Gas Station")
+#+end_src
 
 *** The Amount
 
@@ -146,35 +148,39 @@ can just /not/ assume! We will let the user specify it for us. We can just use
 ~(ledger-context-other-line 0)~ which, if you look at the source, is really just
 ~(ledger-context-at-point)~.
 
-#+begin_src emacs-lisp :exports both :results pp
+#+begin_src emacs-lisp :exports both :results code
 (save-excursion
-  (goto-char 1489)
+  (goto-char 1775)
   (let ((point-context (ledger-context-at-point)))
     (ledger-context-field-value point-context 'commoditized-amount))
   )
 #+end_src
 
 #+RESULTS:
-: "-2200 PHP"
+#+begin_src emacs-lisp
+"-2200 PHP"
+#+end_src
 
 Let's look at another transaction.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :exports both :results code
 (save-excursion
-  (goto-char 1433)
+  (goto-char 1715)
   (let ((point-context (ledger-context-at-point)))
     (ledger-context-field-value point-context 'commoditized-amount)))
 #+end_src
 
 #+RESULTS:
-: 200 PHP
+#+begin_src emacs-lisp
+"200 PHP"
+#+end_src
 
 *** Convenience
 
 We now have everything we need to create a function that can return all the data
 we need in a convenient form.
 
-#+begin_src emacs-lisp :exports both :results pp
+#+begin_src emacs-lisp :exports both :results code
 (defun airtable--expense-data ()
   "Return transaction data for submitting an expense report."
   (let ((xact-context (ledger-xact-context))
@@ -197,15 +203,17 @@ we need in a convenient form.
       nil)))
 
 (save-excursion
-  (goto-char 1489)
+  (goto-char 1775)
   (airtable--expense-data)
   )
 #+end_src
 
 #+RESULTS:
-: ((amount . -2200 PHP)
-:  (payee . Richard Stallman's Gas Station)
-:  (date . 2019/03/29))
+#+begin_src emacs-lisp
+((amount . "-2200 PHP")
+ (payee . "Richard Stallman's Gas Station")
+ (date . "2019/03/29"))
+#+end_src
 
 Now we have a nice, convenient associative data structure containing everything
 we need for the next part.
@@ -215,61 +223,150 @@ we need for the next part.
 
 *** Setup
 
-This section is tricky, because this involves secrets: the "project" id included
-in the URL, and the API key. The former is arguable in its status as a secret,
-but I'd rather not show everyone the URL to my project.
+This section is tricky, because this involves secrets: the "project id" included
+in the URL, and the API key. Mine are... just kidding. Let's load the encrypted
+secrets.
 
-# TODO: talk about encrypting the keys
+#+begin_src emacs-lisp :exports code :results silent
+(load-file "../secrets/airtable-secrets.el")
+(require 'airtable-secrets)
+#+end_src
 
-Funnily enough, I have never been able to get to the API page from my airtable
-account, and have always googled it to get to https://airtable.com/api. Because
-I forget URLs, even obvious ones.
-
-Each Airtable *base* has its own tables and schema, so it will be up you to
-figure out the right table to interact with, and exact fields to use in the JSON
-payload. For my company, the relevant fields are:
-
-1. Date Purchased
-2. Name
-3. Expense Type
-4. PHP Value
-5. Purchase
-
-Beyond the data itself, we need two more things to make this all work: the URL,
-and the access token. Both of these you can get from your base's API
-documentation. Mine are... Just kidding.
-
-*** Experimentation
-
-If I were you, I'd be wary about running POST requests right off the bat without
-being sure about our requests. We'll use ~request.el~ for our http needs.
+We'll need the excellent [[https://github.com/tkf/emacs-request][emacs-request]] library.
 
 #+begin_src emacs-lisp :results silent
 (use-package request :ensure t)
 #+end_src
 
+Each Airtable *base* has its own tables and schema, so it will be up you to
+figure out the right table to interact with, and exact fields to use in the JSON
+payload. Let's created a blank airtable base from the [[https://airtable.com/templates/hr-and-recruiting/expAJmFL8SkCqfjnj/expense-tracking][expense tracking template]].
+We can figure out the api for this particular base by going to
+https://airtable.com/api and selecting the base we just made.
+
+*** Experimentation
+
+I'm wary about running POST requests right off the bat without being sure about
+our requests. We'll use ~request.el~ for our http needs. Let's try to get the
+list of receipts, and since we're only doing this for confirmation, we can set
+(1) ~maxRecords~ to 1. We need to make the request synchronous (2) so that org
+mode can capture the returned value.
+
+#+begin_src emacs-lisp :async :exports both :results value code
+(request-response-data
+ (request airtable-secrets-url
+          :type "GET"
+          :params '(("maxRecords" . 1) ;; (1)
+                    ("view" . "Main View"))
+          :sync t ;; (2)
+          :parser 'json-read
+          :headers `(("Content-Type" . "application/json")
+                     ("Authorization" . ,(format "Bearer %s" airtable-secrets-auth-token)))))
+#+end_src
+
+#+RESULTS:
+#+begin_src emacs-lisp
+((records .
+          [((id . "recvM8nBwdDtki4vo")
+            (fields
+             (Receipt\ Photo .
+                             [((id . "attRl2O8I67NQBQXo")
+                               (url . "https://dl.airtable.com/0cWfA9hiTOWP5QfdUNij_cactuscastle.jpg")
+                               (filename . "cactuscastle.jpg")
+                               (size . 16064)
+                               (type . "image/jpeg")
+                               (thumbnails
+                                (small
+                                 (url . "https://dl.airtable.com/MBqpodIaQJWI62Q5t1iq_cactuscastle.jpg")
+                                 (width . 48)
+                                 (height . 36))
+                                (large
+                                 (url . "https://dl.airtable.com/WQVXLIuiQTGYIgDoAIxY_cactuscastle.jpg")
+                                 (width . 256)
+                                 (height . 191))))])
+             (Category . "Interior Decor")
+             (Short\ Description . "Cactus")
+             (Total . 11.5)
+             (Date\ &\ Time . "2015-11-06T14:22:00.000Z")
+             (Notes . "A cute blue cactus with golden spines, will go great in the dining room.")
+             (Who\ Paid\? . "Maritza"))
+            (createdTime . "2015-08-03T23:10:03.000Z"))]))
+#+end_src
+
+Great, we got a response! Now let's try to POST a new entry. We're setting the
+payor as "Quinns" because that's one of two values allowed by the template.
+
+#+begin_src emacs-lisp :async :exports both :results value code
+(request-response-data
+ (request airtable-secrets-url
+          :type "POST"
+          :sync t
+          :parser 'json-read
+          :data (json-encode `(("fields" . (("Short Description" . "Testing")
+                                            ("Who Paid?" . "Quinns") ;; (1)
+                                            ("Date & Time" . "2019-04-09T14:22:00.000Z")
+                                            ("Total" . 10)
+                                            ))))
+          :headers `(("Content-Type" . "application/json")
+                     ("Authorization" . ,(format "Bearer %s" airtable-secrets-auth-token)))
+          ))
+#+end_src
+
+#+RESULTS:
+#+begin_src emacs-lisp
+((id . "recFyrCYKAAwjELUr")
+ (fields
+  (Short\ Description . "Testing")
+  (Total . 10)
+  (Date\ &\ Time . "2019-04-09T14:22:00.000Z")
+  (Who\ Paid\? . "Quinns"))
+ (createdTime . "2019-04-09T11:25:12.000Z"))
+#+end_src
+
+We can now create a command to post expenses!
+
 #+begin_src emacs-lisp :async :exports both :results output
-;; Note that we're only getting 1 record because we just want to confirm that this whole thing works.
-(load-file "../secrets/airtable-secrets.el")
-(require 'airtable-secrets)
-(request airtable-secrets-url
-         :type "GET"
-         :sync t
-         :parser 'json-read
-         :headers `(("Content-Type" . "application/json")
-                    ("Authorization" . ,(format "Bearer %s" airtable-secrets-auth-token)))
-         :success (cl-function
-                   (lambda (&key data &allow-other-keys)
-                     (print data)))
-         :error (cl-function
-                 (lambda (&key error-thrown &allow-other-keys)
-                   (print error-thrown))))
+(defun airtable--post-expense ()
+  "derp"
+  (interactive)
+  (let* ((xact-data (airtable--expense-data))
+         (xact-date (cdr (assoc 'date xact-data)))
+         (xact-amount (cdr (assoc 'amount xact-data)))
+         (xact-payee (cdr (assoc 'payee xact-data)))
+         (amount (abs (string-to-number (car (split-string xact-amount)))))
+         (date (format "%sT12:00:00.000Z"
+                       (replace-regexp-in-string (regexp-quote "/") "-" xact-date)))
+         )
+    (request airtable-secrets-url
+             :type "POST"
+             :sync t
+             :parser 'json-read
+             :data (json-encode `(("fields" . (("Short Description" . ,xact-payee)
+                                               ("Who Paid?" . "Quinns")
+                                               ("Date & Time" . ,date)
+                                               ("Total" . ,amount)
+                                               ))))
+             :headers `(("Content-Type" . "application/json")
+                        ("Authorization" . ,(format "Bearer %s" airtable-secrets-auth-token)))
+             :success (cl-function
+                       (lambda (&key data &allow-other-keys)
+                         (print "Expense Posted!")))
+             :error (cl-function
+                     (lambda (&key error-thrown &allow-other-keys)
+                       (print error-thrown))))))
+
+(save-excursion
+  (goto-char 1775)
+  (airtable--post-expense)
+  )
 #+end_src
 
 #+RESULTS:
 :
-: ((records . [((id . "rec0BVl03DnQa6HXq") (fields (Who\ Paid\? . "Maritza") (Receipt\ Photo . [((id . "attRl2O8I67NQBQXo") (url . "https://dl.airtable.com/0cWfA9hiTOWP5QfdUNij_cactuscastle.jpg") (filename . "cactuscastle.jpg") (size . 16064) (type . "image/jpeg") (thumbnails (small (url . "https://dl.airtable.com/MBqpodIaQJWI62Q5t1iq_cactuscastle.jpg") (width . 48) (height . 36)) (large (url . "https://dl.airtable.com/WQVXLIuiQTGYIgDoAIxY_cactuscastle.jpg") (width . 256) (height . 191))))]) (Date\ &\ Time . "2015-11-06T14:22:00.000Z") (Notes . "A cute blue cactus with golden spines, will go great in the dining room.") (Category . "Interior Decor") (Short\ Description . "Cactus") (Total . 11.5)) (createdTime . "2015-08-03T23:10:03.000Z"))]))
+: "Expense Posted!"
 
+A quick trip to the base tells me that indeed, the entry has been posted. Now
+all I have to do is take a picture, and the Airtable mobile app makes that easy.
 
 ** Footnotes
 [fn:airtable] My company also uses Airtable for other administrative tasks like
