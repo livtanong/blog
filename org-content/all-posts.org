@@ -433,10 +433,9 @@ because we want this function to run asynchronously.
 
 By now, you probably realized why I didn't turn this into a library: the
 implementation of ~ledger-airtable-post-expense~ is too dependent on the schema
-of the Airtable base it wants to talk to. In my company, for instance, we don't
-require time--only date. The fields are all different as well. I could factor
-this out to accept some function that allows one to build out the ~"fields"~
-data structure, but guess what, that's already the meat of our implementation.
+of the Airtable base it wants to talk to. I could factor this out to accept some
+function that allows one to build out the ~"fields"~ data structure, but at that
+point, we go back to the implementation we came up with here.
 
 That being said, feel free to copy this function and modify it to suit your
 needs. Just remember, you do so at your own risk. I am not responsible for you
