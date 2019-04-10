@@ -441,6 +441,10 @@ That being said, feel free to copy this function and modify it to suit your
 needs. Just remember, you do so at your own risk. I am not responsible for you
 messing up your whole company's database. ;)
 
+Lastly, you may look at the source for this entire blog [[https://github.com/levitanong/blog/blob/master/org-content/all-posts.org][here]]. Load it up in
+emacs. If you have org, babel, etc..., then you can probably hit ~C-c C-c~ and
+evaluate the src-blocks. Of course, you'll have to modify the bits with secrets.
+
 ** Footnotes
 [fn:airtable] My company also uses Airtable for other administrative tasks like
 tracking leaves of absence and many other things. We've mostly switched over to
