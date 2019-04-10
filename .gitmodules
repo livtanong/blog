@@ -6,3 +6,9 @@
 	path = public
 	url = git@github.com:levitanong/levitanong.github.io.git
 	branch = master
+[submodule "themes/hyde"]
+	path = themes/hyde
+	url = https://github.com/spf13/hyde.git
+[submodule "themes/hugo-lithium-theme"]
+	path = themes/hugo-lithium-theme
+	url = https://github.com/jrutheiser/hugo-lithium-theme

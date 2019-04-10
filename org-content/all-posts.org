@@ -21,10 +21,8 @@ expenses via some system defined by the Powers That Be. My company uses
 
 If you use [[https://www.ledger-cli.org/][Ledger]] to maintain your personal accounting, it can and will be
 tedious to log your subsidized/reimbursable expenses on both Ledger /and/
-Airtable. Even if you can say that it isn't really your money being spent, if
-it's a personal expense being subsidized, it's still part of your lifestyle, and
-there is no guarantee you'll be working in the same place or have the same
-benefits forever. This data is valuable to you, and you should keep track of it.
+Airtable. Despite the inconvenience, this data is valuable to you, and you
+should keep track of it to better understand your lifestyle.
 
 Luckily for us, Airtable has an API. This article details my efforts in building
 a set of emacs functions for posting expenses from a Ledger file onto Airtable.
@@ -32,10 +30,15 @@ Because I want this article to be as accessible and as informative as possible,
 I will go through the derivation of this script including exploring
 ledger-mode's implementation.
 
-** Ledger Data
+** Ledger
 
-*** A typical receipt
-Consider a typical ledger transaction:
+*** A Typical Receipt
+
+Let's say that earlier in the day, you needed to gas up, so you passed by
+Richard Stallman's Gas Station. It just so happens that the Philippine Peso
+(PHP), despite all odds, has become the dominant currency of the United States.
+The acronym is no longer associated with PHP: Hypertext Processor, and the
+latter is now nothing more than a bad memory.
 
 #+NAME: Gas Receipt
 #+BEGIN_SRC ledger :results silent
@@ -45,29 +48,94 @@ Consider a typical ledger transaction:
     assets:cash                                -2200 PHP
 #+END_SRC
 
+You also spent 200 PHP on food, because it was there, just begging to be bought,
+and human nature doesn't change much between parallel realities. In ledger
+terms, we call the snippet above an ~xact~ as a whole, rather than a
+transaction. To avoid confusion, we'll have to define a bunch of terms.
+
 *** Definition of Terms
 
-Ledger's terminology may be a little confusing, so let's clarify them.
+**** payee
+A contextualizing description of the xact. Could be just as simple as "John", or
+"McDonald's", but sometimes it's more detailed, like "Martine, for that gallon
+of couscous."
 
-| Term        | What it means                                                                                                                                                                                               | Example                        |
-|-------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------|
-| transaction | A line item detailing a change in the amount stored in an account                                                                                                                                           | expenses:food   2200 PHP       |
-| xact        | A group of transactions tied by a date and some description, usually just the payee. What a lot of peple, myself included, would intuitively think of as the "transaction". I sometimes call this an entry. | The whole thing above          |
-| payee       | A contextualizing description of the xact. Usually a person or entity like John, or McDonald's                                                                                                              | Richard Stallman's Gas Station |
-| account     | An account as described in double entry bookkeeping                                                                                                                                                         | expenses:food                  |
-| amount      | The amount by which an account's balance changes. Because we're sensible programmers, we just use positive and negative values rather than superfluous terms like "debit" and "credit".                     | -2200 PHP                      |
+**** account
+A "bucket" of money. In Ledger, accounts can have a sort of tree structure where
+"Tags" of increasing specificity are joined together by colons to give more
+context. e.g. ~expenses:transport:fuel~, ~assets:cash~, ~assets:savings:php~
+
+**** transaction
+A line item detailing a change in the amount stored in an ~account~. The
+~account~ is separated from the amount by at least two spaces. Referred to in
+the Ledger source as ~acct-transaction~. For example:
+#+begin_src ledger
+expenses:transport:fuel  2000 PHP
+#+end_src
+You can say that an ~xact~ is a group of ~transactions~ contextualized by a date
+and a ~payee~.
+
+*** Utility
+Before we start tinkering, we have to first realize that since we're using
+org-mode and babel, we can execute whatever code we write. We're referring to
+that gas receipt above, so we need to find some way to easily refer to various
+parts of that receipt easily. ~org-babel-goto-named-src-block~ exists.
+
+#+begin_src emacs-lisp :exports both :results pp
+(save-excursion
+  (org-babel-goto-named-src-block "Gas Receipt")
+  (org-element-at-point))
+#+end_src
+
+#+RESULTS:
+: (src-block
+:  (:language "ledger" :switches nil :parameters ":results silent" :begin 1643 :end 1922 :number-lines nil :preserve-indent nil :retain-labels t :use-labels t :label-fmt nil :value "2019/03/29 Richard Stallman's Gas Station\n    expenses:transport:fuel                     2000 PHP\n    expenses:food                                200 PHP\n    assets:cash                                -2200 PHP\n" :post-blank 1 :post-affiliated 1663 :name "Gas Receipt" :parent nil))
+
+Yup, that looks right. If we go down one row, we should get both the date and
+payee.
+
+#+begin_src emacs-lisp :exports both :results pp
+(save-excursion
+  (org-babel-goto-named-src-block "Gas Receipt")
+  (next-line)
+  (thing-at-point 'line t))
+#+end_src
+
+#+RESULTS:
+: "2019/03/29 Richard Stallman's Gas Station\n"
+
+Booyeah. Let's wrap this all up into a function.
+
+#+begin_src emacs-lisp :results silent
+(defun goto-gas-receipt (line-offset)
+  (org-babel-goto-named-src-block "Gas Receipt")
+  (next-line line-offset))
+#+end_src
+
+Let's test it.
+
+#+begin_src emacs-lisp :exports-both :results pp
+(save-excursion
+  (goto-gas-receipt 2)
+  (thing-at-point 'line t))
+#+end_src
+
+#+RESULTS:
+: "    expenses:transport:fuel                     2000 PHP\n"
+
+We're ready.
 
 *** The Payee
 
 Let's rummage through the ledger [[https://github.com/ledger/ledger-mode][source]] to see if we can find a good starting
 point. It turns out that [[https://github.com/ledger/ledger-mode/blob/c59bbfcc3274d113dec68121786546979f33dad0/ledger-xact.el#L65][ledger-xact-payee]] exists. Since ~ledger-xact-payee~
 uses ~point~, and I want to evaluate things using ~org-babel-execute-src-block~,
-we'll have to take an excusion to position ~1287~ (yes, I found the point of
-some character inside that posting above) before invoking ~ledger-xact-payee~.
+we'll have to take an excursion to position ~1287~ (Found by placing my cursor
+on some character that I want, and calling ~(point)~) before invoking ~ledger-xact-payee~.
 
 #+begin_src emacs-lisp :exports both
 (save-excursion
-  (goto-char 1586)
+  (goto-gas-receipt 1)
   (ledger-xact-payee))
 #+end_src
 
@@ -95,11 +163,11 @@ So it looks like:
 1. We start from point
 2. Move up a line if we're in an account transaction
 3. If the line is the ~xact~
-4. Return the ~payee~
+4. Return the ~payee~. Simple enough!
 
 *** The Date
 
-Simple enough. Unfortunately, I haven't found anything like ~ledger-xact-date~,
+Unfortunately, I haven't found anything like ~ledger-xact-date~,
 so we'll have to build our own. Since the implementation would be too similar to
 ~ledger-xact-payee~, I think it would be worth refactoring ~ledger-xact-payee~
 into something more general and composable.
@@ -126,10 +194,11 @@ into something more general and composable.
 #+end_src
 
 This way, we can just use ~ledger-context-field-value~ to get the date or payee.
+I have, in fact, submitted a [[https://github.com/ledger/ledger-mode/pull/168][PR]] to ledger-mode. I hope it will be accepted!
 
 #+begin_src emacs-lisp :exports both :results code
 (save-excursion
-  (goto-char 1601)
+  (goto-gas-receipt 1)
   (let ((xact-context (ledger-xact-context)))
     (list (ledger-context-field-value xact-context 'date)
           (ledger-context-field-value xact-context 'payee))))
@@ -142,15 +211,15 @@ This way, we can just use ~ledger-context-field-value~ to get the date or payee.
 
 *** The Amount
 
-As for the amount, there are at least two, and because ledger entries can get
-more complicated than this, we can't just assume the simplest case. Instead, we
-can just /not/ assume! We will let the user specify it for us. We can just use
-~(ledger-context-other-line 0)~ which, if you look at the source, is really just
-~(ledger-context-at-point)~.
+There are always at least two amounts in every ~xact~ because of double-entry
+bookkeeping. Because ledger entries can get more complicated than this, we can't
+just assume the simplest case. Instead, we can just /not/ assume! We will let
+the user specify it for us. We don't need to travel past our point, which means
+we can use ~(ledger-context-at-point)~.
 
 #+begin_src emacs-lisp :exports both :results code
 (save-excursion
-  (goto-char 1775)
+  (goto-gas-receipt 4)
   (let ((point-context (ledger-context-at-point)))
     (ledger-context-field-value point-context 'commoditized-amount))
   )
@@ -165,7 +234,7 @@ Let's look at another transaction.
 
 #+begin_src emacs-lisp :exports both :results code
 (save-excursion
-  (goto-char 1715)
+  (goto-gas-receipt 3)
   (let ((point-context (ledger-context-at-point)))
     (ledger-context-field-value point-context 'commoditized-amount)))
 #+end_src
@@ -187,15 +256,11 @@ we need in a convenient form.
         (point-context (ledger-context-at-point)))
     (if (and xact-context
              (eq (ledger-context-line-type point-context) 'acct-transaction)
-             (ledger-context-field-present-p point-context
-                                             'commoditized-amount))
+             (ledger-context-field-present-p point-context 'commoditized-amount))
         (let ((tx-data (list))
-              (date (ledger-context-field-value xact-context
-                                                'date))
-              (payee (ledger-context-field-value xact-context
-                                                 'payee))
-              (amount (ledger-context-field-value point-context
-                                                  'commoditized-amount)))
+              (date (ledger-context-field-value xact-context 'date))
+              (payee (ledger-context-field-value xact-context 'payee))
+              (amount (ledger-context-field-value point-context 'commoditized-amount)))
           (map-put tx-data 'date date)
           (map-put tx-data 'payee payee)
           (map-put tx-data 'amount amount)
@@ -203,7 +268,7 @@ we need in a convenient form.
       nil)))
 
 (save-excursion
-  (goto-char 1775)
+  (goto-gas-receipt 4)
   (airtable--expense-data)
   )
 #+end_src
@@ -335,8 +400,7 @@ We can now create a command to post expenses!
          (xact-payee (cdr (assoc 'payee xact-data)))
          (amount (abs (string-to-number (car (split-string xact-amount)))))
          (date (format "%sT12:00:00.000Z"
-                       (replace-regexp-in-string (regexp-quote "/") "-" xact-date)))
-         )
+                       (replace-regexp-in-string (regexp-quote "/") "-" xact-date))))
     (request airtable-secrets-url
              :type "POST"
              :sync t
@@ -365,7 +429,7 @@ We can now create a command to post expenses!
 :
 : "Expense Posted!"
 
-A quick trip to the base tells me that indeed, the entry has been posted. Now
+A quick trip to Airtable tells me that indeed, the entry has been posted. Now
 all I have to do is take a picture, and the Airtable mobile app makes that easy.
 
 ** Footnotes

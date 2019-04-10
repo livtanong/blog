@@ -2,8 +2,8 @@
 baseURL = "https://levitanong.com/"
 # themesDir = "../.."
 languageCode = "en-us"
-title = "Levi Tan Ong's Blog"
-theme = "hugo-cactus-theme"
+title = "Levi Tan Ong"
+theme = "hyde" # "hugo-cactus-theme"
 # Enter your tracking code to enable Google Analytics
 googleAnalytics = ""
 staticDir = "static"
@@ -14,16 +14,14 @@ staticDir = "static"
 pygmentsCodefences = true
 pygmentsStyle = "paraiso-dark"
 
-[pygmentsOptions]
-	noclasses = true
-
 [params]
 	name = "Levi Tan Ong"
-	description = "Code and Stuff"
+	description = "Full Stack Developer, Lisp Enthusiast, Reluctant Designer"
 	bio = "Full Stack Developer, Lisp Enthusiast, Reluctant Designer"
+	themeColor = "theme-base-08"
 	# Enter optionally your twitter account
 	twitter = "https://twitter.com/levitanong"
-	enableRSS = true
+	# enableRSS = true
 
 	# Integrate Javascript files or stylesheets by adding the url to the external assets or by
 	# linking local files with their path relative to the static folder, e.g. "css/styles.css"
