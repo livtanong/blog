@@ -14,6 +14,10 @@ staticDir = "static"
 pygmentsCodefences = true
 pygmentsStyle = "paraiso-dark"
 
+[[menu.main]]
+	name =  "Github"
+	url = "https://github.com/levitanong"
+
 [params]
 	name = "Levi Tan Ong"
 	description = "Full Stack Developer, Lisp Enthusiast, Reluctant Designer"
