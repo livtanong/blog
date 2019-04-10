@@ -7,10 +7,10 @@
 
 #+author: Levi Tan Ong
 
-* DRAFT Airtable Expense Logging with Ledger Mode
+* DONE Airtable Expense Logging with Ledger Mode
 :PROPERTIES:
 :EXPORT_FILE_NAME: expense-logging-with-ledger-mode-and-airtable
-:EXPORT_DATE: 2019-3-31
+:EXPORT_DATE: 2019-04-11
 :END:
 ** Summary
 
