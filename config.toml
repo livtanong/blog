@@ -18,6 +18,14 @@ pygmentsStyle = "paraiso-dark"
 	name =  "Github"
 	url = "https://github.com/levitanong"
 
+[[menu.main]]
+	name = "Keybase"
+	url = "https://keybase.io/litanong"
+
+[[menu.main]]
+	name = "Twitter"
+	url = "https://twitter.com/levitanong"
+
 [params]
 	name = "Levi Tan Ong"
 	description = "Full Stack Developer, Lisp Enthusiast, Reluctant Designer"

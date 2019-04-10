@@ -1,4 +1,5 @@
 #+hugo_base_dir: ../
+#+hugo_section: posts
 #+hugo_auto_set_lastmod: t
 
 #+seq_todo: TODO DRAFT DONE
@@ -7,10 +8,9 @@
 
 #+author: Levi Tan Ong
 
-* DONE Airtable Expense Logging with Ledger Mode
+* Airtable Expense Logging with Ledger Mode
 :PROPERTIES:
 :EXPORT_FILE_NAME: expense-logging-with-ledger-mode-and-airtable
-:EXPORT_DATE: 2019-04-11
 :END:
 ** Summary
 
