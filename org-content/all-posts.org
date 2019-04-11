@@ -15,15 +15,14 @@
 ** Summary
 
 Many companies and organizations subsidize certain things like transit, food,
-and lodging for their employees, with the requirement that the latter log these
-expenses via some system defined by the Powers That Be. My company uses
-[[https://airtable.com][Airtable]]. [fn:airtable]
+and lodging for their employees, provided the latter log these expenses via some
+system defined by the former. My company uses [[https://airtable.com][Airtable]]. [fn:airtable]
 
 If you use [[https://www.ledger-cli.org/][Ledger]] to maintain your personal accounting, or really any other
-method for that matter (but seriously. Use Ledger), it can and will be tedious
-to log your subsidized/reimbursable expenses on both Ledger /and/ Airtable.
-Despite the inconvenience, this data is valuable to you, and you should keep
-track of it to better understand your lifestyle.
+method for that matter (but seriously. Use Ledger), it will be tedious to log
+your subsidized/reimbursable expenses on both books. Despite the inconvenience,
+this data is valuable to you, and you should keep track of it to better
+understand your lifestyle.
 
 Luckily for us, Airtable has an API, and emacs is emacs. This article details my
 efforts in building a set of emacs functions for posting expenses from a Ledger
@@ -52,18 +51,19 @@ latter is now nothing more than a bad memory.
 You also spent 200 PHP on food because it was there, just begging to be bought,
 and human nature doesn't change much between parallel realities.
 
-In ledger, we call the snippet above an ~xact~ as a whole, rather than a
-transaction. To avoid confusion, we'll have to define a bunch of terms.
+In ledger, we call the snippet above an ~xact~ as a whole, rather than the more
+obvious "transaction". To avoid confusion, we'll have to define a few more
+terms.
 
 *** Definition of Terms
 
 **** payee
-A description of the xact. Could be just as simple as "John", or "McDonald's",
-but sometimes it's more detailed, like "Martine, for that gallon of mayonnaise."
+A description of the xact. Could be just as simple as "John" or "McDonald's",
+but sometimes it's more detailed like "Martine, for that gallon of mayonnaise."
 
 **** account
 A "bucket" of money. In Ledger, accounts can have a sort of tree structure where
-"Tags" of increasing specificity are joined together by colons to give structure
+"tags" of increasing specificity are joined together by colons to give structure
 and grouping. e.g. ~expenses:transport:fuel~, ~assets:cash~, ~assets:savings:php~
 
 **** transaction
