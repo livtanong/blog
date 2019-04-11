@@ -141,7 +141,7 @@ point. It turns out that [[https://github.com/ledger/ledger-mode/blob/c59bbfcc32
 #+RESULTS:
 : Richard Stallman's Gas Station
 
-Great, it works as advertized. We also want to figure out the date and the
+Great, it works as advertised. We also want to figure out the date and the
 amount, so let's see how ~ledger-xact-payee~ found the payee.
 
 #+begin_src emacs-lisp :exports code :results silent
