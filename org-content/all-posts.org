@@ -154,9 +154,8 @@ Sweet.
 
 There are always at least two amounts in every ~xact~ because of double-entry
 bookkeeping. [fn:bookkeeping] Because ledger entries can get more complicated
-than this, we can't just assume the simplest case. Instead, we can just /not/
-assume and let the user specify it for us! We don't need to travel past our
-point, which means we can use ~(ledger-context-at-point)~.
+than this, we can't just assume the simplest case. Instead, we can let the user
+specify it for us!
 
 #+begin_src emacs-lisp :exports both :results pp
 (save-excursion
@@ -299,7 +298,7 @@ payor as "Quinns" because that's one of two values allowed by the template.
 We can now create a command to post expenses! Don't forget to make it
 ~interactive~, so we can invoke it from ~M-x~.
 
-#+begin_src emacs-lisp :async :exports both :results output pp
+#+begin_src emacs-lisp :async :exports both :results output
 (defun ledger-airtable-post-expense ()
   "Post an expense to airtable."
   (interactive)
@@ -335,7 +334,8 @@ We can now create a command to post expenses! Don't forget to make it
 #+end_src
 
 #+RESULTS:
-: "\n\"Expense Posted!\"\n"
+:
+: "Expense Posted!"
 
 A quick trip to Airtable tells me that indeed, the entry has been posted. Now
 all I have to do is take a picture of the receipt, but that's out of our scope
