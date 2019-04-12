@@ -12,6 +12,13 @@
 :PROPERTIES:
 :EXPORT_FILE_NAME: expense-logging-with-ledger-mode-and-airtable
 :END:
+** Changelog
+*** 2019/4/13
+My [[https://github.com/ledger/ledger-mode/pull/168][PR]] implementing ~ledger-xact-date~ got accepted, so had to rewrite a bunch.
+- Merged payee and date sections into new ~xact~ section.
+- Added utility function to get transaction amount value.
+- Changed implementation of final airtable exporting function to make use of
+  ~ledger-xact-date~ and ~ledger-transaction-amount-value~
 ** Summary
 
 Many companies and organizations subsidize certain things like transit, food,
@@ -126,91 +133,22 @@ Let's test it.
 
 We're ready!
 
-*** The Payee
+*** The ~xact~
 
-Let's rummage through the ledger [[https://github.com/ledger/ledger-mode][source]] to see if we can find a good starting
-point. It turns out that [[https://github.com/ledger/ledger-mode/blob/c59bbfcc3274d113dec68121786546979f33dad0/ledger-xact.el#L65][ledger-xact-payee]] exists. ~ledger-xact-payee~ uses
-~point~, which means we get to use our cool utility function!
+Conveniently, we have ~ledger-xact-payee~ and ~ledger-xact-date~ ~point~. And
+since both work with ~point~, we get to use our cool utility function!
 
-#+begin_src emacs-lisp :exports both
+#+begin_src emacs-lisp :exports both :results pp
 (save-excursion
   (goto-gas-receipt 1)
-  (ledger-xact-payee))
+  (list (ledger-xact-payee)
+        (ledger-xact-date)))
 #+end_src
 
 #+RESULTS:
-: Richard Stallman's Gas Station
+: ("Richard Stallman's Gas Station" "2019/03/29")
 
-Great, it works as advertised. We also want to figure out the date and the
-amount, so let's see how ~ledger-xact-payee~ found the payee.
-
-#+begin_src emacs-lisp :exports code :results silent
-(defun ledger-xact-payee ()
-  "Return the payee of the transaction containing point or nil."
-  (let ((i 0)) ;; (1)
-    (while (eq (ledger-context-line-type
-                (ledger-context-other-line i))
-               'acct-transaction)
-      (setq i (- i 1))) ;; (2)
-    (let ((context-info (ledger-context-other-line i)))
-      (if (eq (ledger-context-line-type context-info) 'xact) ;; (3)
-          (ledger-context-field-value context-info 'payee) ;; (4)
-        nil))))
-#+end_src
-
-So it looks like:
-1. We start from point
-2. Move up a line if we're in an account transaction
-3. If the line is the ~xact~
-4. Return the ~payee~.
-
-Simple enough! It shouldn't be much different in getting the date.
-
-*** The Date
-
-Unfortunately, I haven't found anything like ~ledger-xact-date~, so we'll have
-to build our own. Since the implementation would be too similar to
-~ledger-xact-payee~, I thought it would be worth refactoring ~ledger-xact-payee~
-into something more general and composable.
-
-#+begin_src emacs-lisp :results silent
-(defun ledger-xact-context
-  "Return the context of the transaction containing point or nil."
-  (let ((i 0))
-    (while (eq (ledger-context-line-type
-                (ledger-context-other-line i))
-               'acct-transaction)
-      (setq i (- i 1)))
-    (let ((context-info (ledger-context-other-line i)))
-      (if (eq (ledger-context-line-type context-info) 'xact)
-          context-info
-        nil))))
-
-(defun ledger-xact-payee ()
-  "Return the payee of the transaction containing point or nil."
-  (let ((xact-context (ledger-xact-context)))
-    (if xact-context
-        (ledger-context-field-value xact-context 'payee)
-      nil)))
-#+end_src
-
-This way, we can just use ~ledger-context-field-value~ to get the date or payee.
-I have, in fact, submitted a [[https://github.com/ledger/ledger-mode/pull/168][PR]] to ledger-mode. I hope it will be accepted!
-
-#+begin_src emacs-lisp :exports both :results code
-(save-excursion
-  (goto-gas-receipt 1)
-  (let ((xact-context (ledger-xact-context)))
-    (list (ledger-context-field-value xact-context 'date)
-          (ledger-context-field-value xact-context 'payee))))
-#+end_src
-
-#+RESULTS:
-#+begin_src emacs-lisp
-("2019/03/29" "Richard Stallman's Gas Station")
-#+end_src
-
-Shazam!
+Sweet.
 
 *** The Amount
 
@@ -220,58 +158,37 @@ than this, we can't just assume the simplest case. Instead, we can just /not/
 assume and let the user specify it for us! We don't need to travel past our
 point, which means we can use ~(ledger-context-at-point)~.
 
-#+begin_src emacs-lisp :exports both :results code
+#+begin_src emacs-lisp :exports both :results pp
 (save-excursion
   (goto-gas-receipt 4)
   (let ((point-context (ledger-context-at-point)))
-    (ledger-context-field-value point-context 'commoditized-amount))
-  )
+    (ledger-context-field-value point-context 'commoditized-amount)))
 #+end_src
 
 #+RESULTS:
-#+begin_src emacs-lisp
-"-2200 PHP"
-#+end_src
+: "-2200 PHP"
 
-*** Convenience
+This is good, but we can do better. On its own, a string isn't very usable. We
+can make a function that simply returns the value and discards the currency. For
+now, we don't want to support multiple currencies.
 
-We now have everything we need to create a function that can return all the data
-we need in a convenient form.
-
-#+begin_src emacs-lisp :exports both :results code
-(defun airtable--expense-data ()
-  "Return transaction data for submitting an expense report."
-  (let ((xact-context (ledger-xact-context))
-        (point-context (ledger-context-at-point)))
-    (if (and xact-context
-             (eq (ledger-context-line-type point-context) 'acct-transaction)
-             (ledger-context-field-present-p point-context 'commoditized-amount))
-        (let ((tx-data (list))
-              (date (ledger-context-field-value xact-context 'date))
-              (payee (ledger-context-field-value xact-context 'payee))
-              (amount (ledger-context-field-value point-context 'commoditized-amount)))
-          (map-put tx-data 'date date)
-          (map-put tx-data 'payee payee)
-          (map-put tx-data 'amount amount)
-          tx-data)
-      nil)))
+#+begin_src emacs-lisp :exports both :results pp
+(defun ledger-transaction-amount-value ()
+  "Returns the value of the amount of a transaction without its attached currency."
+  (let ((amount (ledger-context-field-value (ledger-context-at-point)
+                                            'commoditized-amount)))
+    (string-to-number (car (split-string amount)))))
 
 (save-excursion
   (goto-gas-receipt 4)
-  (airtable--expense-data)
-  )
+  (ledger-transaction-amount-value))
 #+end_src
 
 #+RESULTS:
-#+begin_src emacs-lisp
-((amount . "-2200 PHP")
- (payee . "Richard Stallman's Gas Station")
- (date . "2019/03/29"))
-#+end_src
+: -2200
 
-Now we have a nice, convenient associative data structure containing everything
-we need for the next part.
-
+We'll get the absolute value of this number later on, because we never want to
+submit negative expenses.
 
 ** Airtable
 
@@ -382,28 +299,28 @@ payor as "Quinns" because that's one of two values allowed by the template.
 We can now create a command to post expenses! Don't forget to make it
 ~interactive~, so we can invoke it from ~M-x~.
 
-#+begin_src emacs-lisp :async :exports both :results output
+#+begin_src emacs-lisp :async :exports both :results output pp
 (defun ledger-airtable-post-expense ()
-  "Post an expense at point to Airtable."
+  "Post an expense to airtable."
   (interactive)
-  (let* ((xact-data (airtable--expense-data))
-         (xact-date (cdr (assoc 'date xact-data)))
-         (xact-amount (cdr (assoc 'amount xact-data)))
-         (xact-payee (cdr (assoc 'payee xact-data)))
-         (amount (abs (string-to-number (car (split-string xact-amount)))))
-         (date (format "%sT12:00:00.000Z"
-                       (replace-regexp-in-string (regexp-quote "/") "-" xact-date))))
-    (request airtable-secrets-url
+  (let* ((xact-date (ledger-xact-date))
+         (xact-payee (ledger-xact-payee))
+         (xact-amount (ledger-transaction-amount-value))
+         (amount (abs xact-amount))
+         (date (replace-regexp-in-string (regexp-quote "/") "-" xact-date))
+         (date-time (format "%sT12:00:00.000Z" date)))
+    (request blog--ledger-airtable-secrets-base-url
              :type "POST"
              :sync t
              :parser 'json-read
-             :data (json-encode `(("fields" . (("Short Description" . ,xact-payee)
+             :data (json-encode `(("fields" . (
+                                               ("Date & Time" . ,date-time)
                                                ("Who Paid?" . "Quinns")
-                                               ("Date & Time" . ,date)
                                                ("Total" . ,amount)
+                                               ("Short Description" . ,xact-payee)
                                                ))))
              :headers `(("Content-Type" . "application/json")
-                        ("Authorization" . ,(format "Bearer %s" airtable-secrets-auth-token)))
+                        ("Authorization" . ,(format "Bearer %s" blog--ledger-airtable-secrets-auth-token)))
              :success (cl-function
                        (lambda (&key data &allow-other-keys)
                          (print "Expense Posted!")))
@@ -418,8 +335,7 @@ We can now create a command to post expenses! Don't forget to make it
 #+end_src
 
 #+RESULTS:
-:
-: "Expense Posted!"
+: "\n\"Expense Posted!\"\n"
 
 A quick trip to Airtable tells me that indeed, the entry has been posted. Now
 all I have to do is take a picture of the receipt, but that's out of our scope
@@ -477,6 +393,7 @@ https://github.com/wallyqs/org-ruby/issues/62
 ** clojars and credentials
 ** git crypt
 
+* TODO Document trying PHP out, maybe compare with lisp
 * Footnotes
 * COMMENT Local Variables                          :ARCHIVE:
 # Local Variables:
