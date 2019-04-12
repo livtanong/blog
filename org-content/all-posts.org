@@ -36,7 +36,7 @@ Changelog
   First Release
 #+end_details
 
-** Summary
+** Introduction
 
 Many companies and organizations subsidize certain things like transit, food,
 and lodging for their employees, provided the latter log these expenses via some
@@ -398,6 +398,7 @@ https://github.com/wallyqs/org-ruby/issues/42
 ** code block evaluation
 *** results being funky
 https://orgmode.org/manual/results.html
+*** When dealing with emacs-request, need to use sync.
 *** multiline headers for readability
 https://orgmode.org/manual/Using-Header-Arguments.html
 *** results not showing on github
