@@ -19,6 +19,8 @@ My [[https://github.com/ledger/ledger-mode/pull/168][PR]] implementing ~ledger-x
 - Added utility function to get transaction amount value.
 - Changed implementation of final airtable exporting function to make use of
   ~ledger-xact-date~ and ~ledger-transaction-amount-value~
+*** 2019/4/11
+First Release
 ** Summary
 
 Many companies and organizations subsidize certain things like transit, food,
