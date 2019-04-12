@@ -26,6 +26,6 @@
     white-space: pre-line;
 }
 
-details summary {
+details * {
     outline: none;
 }
