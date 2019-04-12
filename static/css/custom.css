@@ -25,3 +25,7 @@
     letter-spacing: 1px;
     white-space: pre-line;
 }
+
+details summary {
+    outline: none;
+}
