@@ -12,15 +12,7 @@
 :PROPERTIES:
 :EXPORT_FILE_NAME: expense-logging-with-ledger-mode-and-airtable
 :END:
-** Changelog
-*** 2019/4/13
-My [[https://github.com/ledger/ledger-mode/pull/168][PR]] implementing ~ledger-xact-date~ got accepted, so had to rewrite a bunch.
-- Merged payee and date sections into new ~xact~ section.
-- Added utility function to get transaction amount value.
-- Changed implementation of final airtable exporting function to make use of
-  ~ledger-xact-date~ and ~ledger-transaction-amount-value~
-*** 2019/4/11
-First Release
+
 ** Summary
 
 Many companies and organizations subsidize certain things like transit, food,
@@ -38,6 +30,16 @@ efforts in building a set of emacs functions for posting expenses from a Ledger
 file onto Airtable. Because I want this article to be as accessible and as
 informative as possible, I will go through the derivation of this script
 including exploring ledger-mode's implementation.
+
+** Changelog
+*** 2019/4/13
+My [[https://github.com/ledger/ledger-mode/pull/168][PR]] implementing ~ledger-xact-date~ got accepted, so had to rewrite a bunch.
+- Merged payee and date sections into new ~xact~ section.
+- Added utility function to get transaction amount value.
+- Changed implementation of final airtable exporting function to make use of
+  ~ledger-xact-date~ and ~ledger-transaction-amount-value~
+*** 2019/4/11
+First Release
 
 ** Ledger
 
