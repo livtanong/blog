@@ -135,8 +135,8 @@ We're ready!
 
 *** The ~xact~
 
-Conveniently, we have ~ledger-xact-payee~ and ~ledger-xact-date~ ~point~. And
-since both work with ~point~, we get to use our cool utility function!
+Conveniently, we have ~ledger-xact-payee~ and ~ledger-xact-date~. Since both
+work with ~point~, we get to use our cool utility function!
 
 #+begin_src emacs-lisp :exports both :results pp
 (save-excursion
