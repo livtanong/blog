@@ -18,6 +18,7 @@
 
 .highlight pre {
     white-space: pre;
+    word-wrap: normal; /* to make safari honor white-space: pre; */
     overflow-x: auto;
 }
 
