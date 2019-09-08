@@ -387,14 +387,134 @@ doesn't have an API.
 greatly helped me understand this thing.
 
 
+* TODO Parsing Credit Card Statements
+:PROPERTIES:
+:EXPORT_FILE_NAME: parsing-credit-card-statements
+:END:
 
-* TODO Github READMEs in Org Mode
+** Converting PDF to text
+
+We need `pdftotext`, but it seems to have been deprecated. Let's use poppler
+because it's an updated version of xpdf, which itself contains pdftotext.
+
+#+begin_src sh :eval never
+brew install poppler
+#+end_src
+
+#+begin_src emacs-lisp :results silent
+(setq pdf-path "~/Downloads/statement.pdf"
+      txt-path "~/Downloads/statement.txt")
+#+end_src
+
+#+begin_src emacs-lisp :results silent
+(defun line-beginning-position-of-position (position)
+  "Awkwardly named, I know. Returns what would be the start position
+of the line containing `position`."
+  (save-excursion
+    (goto-char position)
+    (line-beginning-position)))
+#+end_src
+
+#+begin_src emacs-lisp
+(setq statement-string
+      (shell-command-to-string
+       (format "pdftotext -f 2 -layout %s %s && cat %s"
+               pdf-path
+               txt-path
+               txt-path)))
+
+(with-temp-buffer
+  (insert statement-string)
+  (goto-char (point-min))
+  (buffer-substring (re-search-forward "Date[ \t]+Date")
+                    (re-search-forward "We find ways"))
+  (buffer-substring (re-search-forward "Date[ \t]+Date")
+                    (re-search-forward "We find ways.*+Page [1-9] of [1-9]"))
+  ;; (goto-char (point-min))
+  ;; (let ((dates (split-string
+  ;;               (buffer-substring-no-properties
+  ;;                (search-forward "Post\nDate\n")
+  ;;                (line-beginning-position-of-position
+  ;;                 (search-forward "We find ways")))
+  ;;               "\n")))
+  ;;   (seq-partition dates (/ (length dates) 2)))
+  )
+  #+end_src
+
+#+RESULTS:
+:
+:
+:                                                                     SUB TOTAL                                                                                       45,603.72
+:                                                                     TOTAL                                                                                           45,603.72
+:
+:
+:
+:
+: We find ways ®                                                                                                                                                  Page 3 of 3
+
+* TODO Tmux
+- https://www.hamvocke.com/blog/a-guide-to-customizing-your-tmux-conf/
+- https://gist.github.com/henrik/1967800
+- https://github.com/hlissner/emacs-doom-themes/blob/master/themes/doom-one-theme.el
+* TODO Github and Gitlab READMEs in Org Mode
 :PROPERTIES:
 :EXPORT_FILE_NAME: github-readmes-in-org-mode
 :EXPORT_DATE: 2019-3-31
 :END:
-** clojars image links
-https://github.com/wallyqs/org-ruby/issues/42
+** Introduction
+It goes without saying that READMEs are pretty important. They describe the
+project you've made, provide instructions on how to build/run/deploy/use it,
+etc... Fortunately, both github and gitlab support READMEs in org.
+Unfortunately, org support can get a little funky. The lingua franca of writing
+in the web is markdown, and it shows. I am stubborn though, and I will use org
+because org is better. This article is a collection of gotchas and bits of
+helpful information in getting your README.org to come out right. I expect this
+to become a living document that I will update from time to time as the
+environment changes. I hope one day for this article to become unnecessary.
+
+** Image Links
+Status badges that tell you if your CI has passed, or how good your test
+coverage is, are really just images that link to some external URL showing more
+details. Of course, places like clojars provide convenient snippets for creating
+these things in markdown and nothing else.
+
+#+CAPTION: Is my resentment obvious?
+#+NAME: fig:injustice
+[[/images/clojars-version-badge.png]]
+
+#+begin_src markdown :exports both :results code
+[![Clojars Project](https://img.shields.io/clojars/v/com.levitanong/periods.svg)](https://clojars.org/com.levitanong/periods)
+#+end_src
+
+#+RESULTS:
+#+begin_src markdown
+<p><a href="https://clojars.org/com.levitanong/periods"><img src="https://img.shields.io/clojars/v/com.levitanong/periods.svg" alt="Clojars Project" title="" /></a></p>
+#+end_src
+
+In orgmode, it's actually easier. According to the Org [[https://orgmode.org/manual/External-links.html][documentation]],
+
+#+begin_quote
+If the description is a file name or URL that points to an image, HTML export
+(see HTML export) will inline the image as a clickable button. If there is no
+description at all and the link points to an image, that image will be inlined
+into the exported HTML file.
+#+end_quote
+
+#+begin_src org :exports both :results raw
+[[https://clojars.org/com.levitanong/periods][https://img.shields.io/clojars/v/com.levitanong/periods.svg]]
+#+end_src
+
+#+RESULTS:
+[[https://clojars.org/com.levitanong/periods][https://img.shields.io/clojars/v/com.levitanong/periods.svg]]
+
+# [[https://clojars.org/com.levitanong/periods][https://img.shields.io/clojars/v/com.levitanong/periods.svg]]
+** Source Blocks
+Chances are, if you're writing a github/gitlab README, you should be showing
+some code, whether it's to demonstrate your API, be it shell, language, or REST.
+If you're showing code, you might as well actually evaluate that code and show
+the result. [[https://orgmode.org/worg/org-contrib/babel/][Org Babel]]  has your back.
+
+
 ** code block evaluation
 *** results being funky
 https://orgmode.org/manual/results.html
@@ -403,6 +523,17 @@ https://orgmode.org/manual/results.html
 https://orgmode.org/manual/Using-Header-Arguments.html
 *** results not showing on github
 https://github.com/wallyqs/org-ruby/issues/62
+
+** Troubleshooting
+If something goes wrong, and your org mode file isn't being rendered the way you
+expect, chances are it's due to the parser. The same would be true with
+markdown. After all, something converts them to html.
+
+It just so happens that github and gitlab both use the same parser for rendering
+org mode files: https://github.com/wallyqs/org-ruby.
+
+
+
 * TODO Fish et al
 :PROPERTIES:
 :EXPORT_FILE_NAME: fish-et-al
